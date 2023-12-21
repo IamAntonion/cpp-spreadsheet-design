@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include <functional>
+#include <set>
 
 class Sheet : public SheetInterface {
 public:
@@ -21,14 +22,19 @@ public:
     void PrintValues(std::ostream& output) const override;
     void PrintTexts(std::ostream& output) const override;
 
-    const Cell* GetConcreteCell(Position pos) const;
-    Cell* GetConcreteCell(Position pos);
+    // Возвращает новое значение, обновляет значения формул при необходимости.
+    FormulaInterface::Value GetNewValue(
+        Position pos,
+        const FormulaInterface& formula,
+        std::vector<std::vector<int>>& ref_count);
+    const std::set<Position>& GetBackReferences(Position pos) const;
 
 private:
-    void MaybeIncreaseSizeToIncludePosition(Position pos);
-    void PrintCells(std::ostream& output,
-                    const std::function<void(const CellInterface&)>& printCell) const;
-    Size GetActualSize() const;
-
-    std::vector<std::vector<std::unique_ptr<Cell>>> cells_;
+    struct CellInfo {
+        std::unique_ptr<Cell> cell;
+        std::unique_ptr<std::set<Position>> referenced_by;
+    };
+    std::vector<std::vector<CellInfo>> values_;
+    size_t width_ = 0;
+    size_t max_width_rows_ = 0;
 };
